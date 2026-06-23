@@ -81,7 +81,8 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .lote-hdr-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-muted)}
 .lote-arrow{display:inline-block;transition:transform .2s;font-size:10px;color:var(--text-muted);margin-right:6px}
 .lote-group-header.open .lote-arrow{transform:rotate(90deg)}
-.lote-units-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+.lote-units-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05);max-height:0;overflow:hidden;opacity:0;transition:max-height .25s ease,opacity .2s ease,margin-top .2s ease,padding-top .2s ease}
+.lote-group-header.open .lote-units-row{max-height:400px;opacity:1}
 .unit-chip{display:inline-flex;align-items:center;gap:4px;font-family:monospace;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid;transition:all .15s;cursor:default;user-select:none}
 .unit-chip.disponivel{background:rgba(192,192,192,.06);border-color:rgba(192,192,192,.18);color:var(--silver)}
 .unit-chip.vendida{background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.2);color:#a05050;text-decoration:line-through;opacity:.55}
@@ -266,6 +267,9 @@ input[readonly]{opacity:.55;cursor:default}
     <div class="nav-item" data-page="relatorios" onclick="navigate('relatorios')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Relatorios
     </div>
+    <div class="nav-item" data-page="exportar" onclick="navigate('exportar')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar
+    </div>
     <div class="nav-item" data-page="calendario" onclick="navigate('calendario')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario
     </div>
@@ -343,11 +347,33 @@ input[readonly]{opacity:.55;cursor:default}
           <option value="entrada">Entrada</option><option value="saida">Saida (venda)</option>
           <option value="ajuste">Ajuste</option><option value="remocao">Remocao</option>
         </select>
+        <input class="filter-input" id="mov-filter-busca" placeholder="Buscar codigo ou produto..." oninput="renderMovimentacoes()" style="min-width:200px">
       </div>
-      <div class="card">
+      <div id="mov-dois-cards" class="two-col">
+        <div class="card">
+          <div class="card-header" style="border-left:3px solid var(--success)">
+            <span class="card-title" style="color:#4ec97f">Entradas</span>
+            <span id="mov-count-entrada" class="badge badge-ok">0</span>
+          </div>
+          <table><thead><tr><th>Data/Hora</th><th>Unidade</th><th>Produto</th><th>Obs</th></tr></thead>
+          <tbody id="tbody-movs-entrada"></tbody></table>
+          <div id="movs-entrada-empty" class="empty-state" style="display:none"><p>Nenhuma entrada.</p></div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="border-left:3px solid var(--danger)">
+            <span class="card-title" style="color:#e06050">Saidas / Vendas</span>
+            <span id="mov-count-saida" class="badge badge-danger">0</span>
+          </div>
+          <table><thead><tr><th>Data/Hora</th><th>Unidade</th><th>Produto</th><th>Tipo</th><th>Obs</th></tr></thead>
+          <tbody id="tbody-movs-saida"></tbody></table>
+          <div id="movs-saida-empty" class="empty-state" style="display:none"><p>Nenhuma saida.</p></div>
+        </div>
+      </div>
+      <!-- vista unificada quando filtro especifico selecionado -->
+      <div id="mov-card-unico" class="card" style="display:none">
         <table><thead><tr><th>Data/Hora</th><th>Unidade</th><th>Produto</th><th>Tipo</th><th>Obs</th></tr></thead>
         <tbody id="tbody-movs"></tbody></table>
-        <div id="movs-empty" class="empty-state" style="display:none"><p>Nenhuma movimentacao registrada.</p></div>
+        <div id="movs-empty" class="empty-state" style="display:none"><p>Nenhuma movimentacao.</p></div>
       </div>
     </div>
 
@@ -473,6 +499,43 @@ input[readonly]{opacity:.55;cursor:default}
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span class="text-muted">Gastos totais</span><span class="negative" id="cal-mes-g">R$ 0,00</span></div>
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span class="text-muted">Custo de produtos</span><span class="negative" id="cal-mes-c">R$ 0,00</span></div>
               <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--silver-lt);padding-top:10px;border-top:1px solid var(--border)"><span>Lucro liquido</span><span id="cal-mes-l">R$ 0,00</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div id="page-exportar" class="page">
+      <div style="max-width:680px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Exportar Relatorio Completo</span></div>
+          <div style="padding:20px">
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Gera um relatorio profissional em HTML/PDF com todos os dados do sistema: estoque, vendas, gastos, lucros, fornecedores e clientes.</p>
+            <div class="form-group">
+              <label>Periodo das vendas e gastos</label>
+              <div class="form-row">
+                <div><label>De</label><input type="date" id="exp-de"></div>
+                <div><label>Ate</label><input type="date" id="exp-ate"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Incluir secoes</label>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-estoque" checked style="width:auto;accent-color:var(--silver-dk)"> Estoque atual (todos os produtos e unidades)</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-vendas" checked style="width:auto;accent-color:var(--silver-dk)"> Historico de vendas</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-gastos" checked style="width:auto;accent-color:var(--silver-dk)"> Gastos registrados</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-financeiro" checked style="width:auto;accent-color:var(--silver-dk)"> Resumo financeiro (lucro, receita, custo)</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-clientes" checked style="width:auto;accent-color:var(--silver-dk)"> Clientes e historico de compras</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-fornecedores" checked style="width:auto;accent-color:var(--silver-dk)"> Fornecedores</label>
+                <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="exp-movs" style="width:auto;accent-color:var(--silver-dk)"> Historico completo de movimentacoes</label>
+              </div>
+            </div>
+            <div style="margin-top:6px">
+              <button class="btn btn-primary" onclick="gerarRelatorio()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Gerar e Baixar Relatorio
+              </button>
             </div>
           </div>
         </div>
@@ -772,7 +835,7 @@ function navigate(page){
   document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
   document.getElementById('page-title').textContent=pageTitles[page]||page;
   closeSidebar();
-  ({dashboard:renderDashboard,lotes:renderLotes,movimentacoes:renderMovimentacoes,vendas:renderVendas,gastos:renderGastos,fornecedores:renderFornecedores,clientes:renderClientes,relatorios:renderRelatorios,calendario:renderCalendario})[page]?.();
+  ({dashboard:renderDashboard,lotes:renderLotes,movimentacoes:renderMovimentacoes,vendas:renderVendas,gastos:renderGastos,fornecedores:renderFornecedores,clientes:renderClientes,relatorios:renderRelatorios,calendario:renderCalendario,exportar:()=>{}})[page]?.();
 }
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay-bg').classList.toggle('open'); }
 function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay-bg').classList.remove('open'); }
@@ -1153,24 +1216,52 @@ function confirmarAjuste(){
 // ── MOVIMENTACOES ────────────────────────────────────
 function renderMovimentacoes(){
   const filtro=document.getElementById('mov-filter-tipo').value;
+  const busca=(document.getElementById('mov-filter-busca')?.value||'').toLowerCase();
   let list=[...db.movimentacoes].reverse();
-  if(filtro) list=list.filter(m=>m.tipo===filtro);
-  const tbody=document.getElementById('tbody-movs');
-  const empty=document.getElementById('movs-empty');
-  tbody.innerHTML='';
-  if(!list.length){empty.style.display='block';return;}empty.style.display='none';
-  const tl={entrada:'<span class="badge badge-ok">Entrada</span>',saida:'<span class="badge badge-danger">Saida</span>',ajuste:'<span class="badge badge-warn">Ajuste</span>',remocao:'<span class="badge badge-danger">Remocao</span>'};
-  list.forEach(m=>{
+  if(busca) list=list.filter(m=>{
     const u=db.unidades.find(x=>x.id===m.unidadeId);
     const p=u?db.produtos.find(x=>x.id===u.prodId):null;
-    tbody.innerHTML+=`<tr>
-      <td class="text-muted">${fmtDate(m.data)}</td>
-      <td class="font-mono" style="color:var(--silver)">${u?.codigo||'—'}</td>
-      <td>${p?.nome||'<span class="text-muted">—</span>'}</td>
-      <td>${tl[m.tipo]||m.tipo}</td>
-      <td class="text-muted">${m.obs||'—'}</td>
-    </tr>`;
+    return (u?.codigo||'').toLowerCase().includes(busca)||(p?.nome||'').toLowerCase().includes(busca);
   });
+
+  const modoUnico = filtro && filtro!=='';
+  document.getElementById('mov-dois-cards').style.display = modoUnico?'none':'grid';
+  document.getElementById('mov-card-unico').style.display = modoUnico?'block':'none';
+
+  const tl={entrada:'<span class="badge badge-ok">Entrada</span>',saida:'<span class="badge badge-danger">Saida</span>',ajuste:'<span class="badge badge-warn">Ajuste</span>',remocao:'<span class="badge badge-danger">Remocao</span>'};
+
+  if(modoUnico){
+    const fil=list.filter(m=>m.tipo===filtro);
+    const tbody=document.getElementById('tbody-movs');
+    const empty=document.getElementById('movs-empty');
+    tbody.innerHTML='';
+    if(!fil.length){empty.style.display='block';return;}empty.style.display='none';
+    fil.forEach(m=>{
+      const u=db.unidades.find(x=>x.id===m.unidadeId);
+      const p=u?db.produtos.find(x=>x.id===u.prodId):null;
+      tbody.innerHTML+=`<tr><td class="text-muted">${fmtDate(m.data)}</td><td class="font-mono" style="color:var(--silver)">${u?.codigo||'—'}</td><td>${p?.nome||'<span class="text-muted">—</span>'}</td><td>${tl[m.tipo]||m.tipo}</td><td class="text-muted">${m.obs||'—'}</td></tr>`;
+    });
+    return;
+  }
+
+  // DOIS CARDS
+  const entradas=list.filter(m=>m.tipo==='entrada');
+  const saidas=list.filter(m=>m.tipo==='saida'||m.tipo==='remocao'||m.tipo==='ajuste');
+
+  document.getElementById('mov-count-entrada').textContent=entradas.length;
+  document.getElementById('mov-count-saida').textContent=saidas.length;
+
+  const teE=document.getElementById('tbody-movs-entrada');
+  const emE=document.getElementById('movs-entrada-empty');
+  teE.innerHTML='';
+  if(!entradas.length) emE.style.display='block';
+  else{ emE.style.display='none'; entradas.forEach(m=>{const u=db.unidades.find(x=>x.id===m.unidadeId);const p=u?db.produtos.find(x=>x.id===u.prodId):null;teE.innerHTML+=`<tr><td class="text-muted">${fmtDate(m.data)}</td><td class="font-mono" style="color:#4ec97f">${u?.codigo||'—'}</td><td>${p?.nome||'—'}</td><td class="text-muted">${m.obs||'—'}</td></tr>`;}); }
+
+  const teS=document.getElementById('tbody-movs-saida');
+  const emS=document.getElementById('movs-saida-empty');
+  teS.innerHTML='';
+  if(!saidas.length) emS.style.display='block';
+  else{ emS.style.display='none'; saidas.forEach(m=>{const u=db.unidades.find(x=>x.id===m.unidadeId);const p=u?db.produtos.find(x=>x.id===u.prodId):null;teS.innerHTML+=`<tr><td class="text-muted">${fmtDate(m.data)}</td><td class="font-mono" style="color:#e06050">${u?.codigo||'—'}</td><td>${p?.nome||'—'}</td><td>${tl[m.tipo]||m.tipo}</td><td class="text-muted">${m.obs||'—'}</td></tr>`;}); }
 }
 
 // ── VENDAS ───────────────────────────────────────────
@@ -1373,9 +1464,11 @@ function renderDashboard(){
   else{te.style.display='none';top.forEach(([pid,d])=>{const p=db.produtos.find(x=>x.id===pid);const f=db.fornecedores.find(x=>x.id===p?.fornecedorId);tb.innerHTML+=`<tr><td>${p?.nome||'—'}</td><td class="text-muted">${f?.nome||'—'}</td><td><span class="badge badge-silver">${p?.categoria||'—'}</span></td><td>${d.qtd}</td><td>${fmt(d.rec)}</td></tr>`;});}
 }
 
+
 // ── CALENDARIO ───────────────────────────────────────
 let _calY=new Date().getFullYear(),_calM=new Date().getMonth(),_calDia=null;
 const MESES=['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
 function renderCalendario(){
   const mf=_calY+'-'+(_calM+1).toString().padStart(2,'0');
   document.getElementById('cal-titulo').textContent=MESES[_calM]+' '+_calY;
@@ -1390,12 +1483,14 @@ function renderCalendario(){
   document.getElementById('cal-mes-g').textContent=fmt(gt);
   document.getElementById('cal-mes-c').textContent=fmt(cst);
   const lEl=document.getElementById('cal-mes-l');lEl.textContent=fmt(luc);lEl.className=luc>=0?'positive':'negative';
+  // Renderiza grade sem chamar calDia
   const hoje=new Date();
   const prim=new Date(_calY,_calM,1).getDay();
   const dias=new Date(_calY,_calM+1,0).getDate();
   const ant=new Date(_calY,_calM,0).getDate();
-  const cont=document.getElementById('cal-days');cont.innerHTML='';
-  for(let i=prim-1;i>=0;i--){const d=document.createElement('div');d.className='cal-day other-month';d.innerHTML=`<div class="cal-dn">${ant-i}</div>`;cont.appendChild(d);}
+  const cont=document.getElementById('cal-days');
+  const frag=document.createDocumentFragment();
+  for(let i=prim-1;i>=0;i--){const d=document.createElement('div');d.className='cal-day other-month';d.innerHTML=`<div class="cal-dn">${ant-i}</div>`;frag.appendChild(d);}
   for(let d=1;d<=dias;d++){
     const ds=_calY+'-'+(_calM+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
     const isH=d===hoje.getDate()&&_calM===hoje.getMonth()&&_calY===hoje.getFullYear();
@@ -1406,17 +1501,25 @@ function renderCalendario(){
     const el=document.createElement('div');
     el.className='cal-day'+(isH?' today':'')+(isSel?' selected':'');
     el.innerHTML=`<div class="cal-dn">${d}</div><div class="cal-dots">${tV?'<span class="cal-dot dot-g"></span>':''}${tG?'<span class="cal-dot dot-r"></span>':''}${tE?'<span class="cal-dot dot-y"></span>':''}</div>`;
-    el.onclick=()=>calDia(ds,d);
-    cont.appendChild(el);
+    const _ds=ds,_d=d; el.onclick=()=>calDia(_ds,_d);
+    frag.appendChild(el);
   }
   const tot=prim+dias;const resto=tot%7===0?0:7-(tot%7);
-  for(let i=1;i<=resto;i++){const el=document.createElement('div');el.className='cal-day other-month';el.innerHTML=`<div class="cal-dn">${i}</div>`;cont.appendChild(el);}
-  if(_calDia) calDia(_calDia);
+  for(let i=1;i<=resto;i++){const el=document.createElement('div');el.className='cal-day other-month';el.innerHTML=`<div class="cal-dn">${i}</div>`;frag.appendChild(el);}
+  cont.innerHTML='';
+  cont.appendChild(frag);
 }
+
 function calNav(d){_calM+=d;if(_calM>11){_calM=0;_calY++;}if(_calM<0){_calM=11;_calY--;}_calDia=null;renderCalendario();}
+
+// calDia NAO chama renderCalendario — apenas atualiza selecao visual e painel de detalhe
 function calDia(ds,dn){
   _calDia=ds;
-  document.getElementById('cal-detail-titulo').textContent=(dn||parseInt(ds.split('-')[2]))+' de '+MESES[_calM]+' de '+_calY;
+  document.querySelectorAll('#cal-days .cal-day').forEach(el=>el.classList.remove('selected'));
+  const dNum=dn||parseInt(ds.split('-')[2]);
+  const allDays=[...document.querySelectorAll('#cal-days .cal-day:not(.other-month)')];
+  if(allDays[dNum-1]) allDays[dNum-1].classList.add('selected');
+  document.getElementById('cal-detail-titulo').textContent=dNum+' de '+MESES[_calM]+' de '+_calY;
   const vendas=db.vendas.filter(v=>v.data.startsWith(ds));
   const gastos=db.gastos.filter(g=>g.data.startsWith(ds));
   const entradas=db.movimentacoes.filter(m=>m.tipo==='entrada'&&m.data.startsWith(ds));
@@ -1427,18 +1530,150 @@ function calDia(ds,dn){
   document.getElementById('cal-detail-body').innerHTML=html||'<p class="text-muted" style="font-size:13px;padding:8px 0">Nenhum registro neste dia.</p>';
   const totR=vendas.reduce((a,v)=>a+v.total,0);const totG=gastos.reduce((a,g)=>a+g.valor,0);const saldo=totR-totG;
   const totDiv=document.getElementById('cal-totais');
-  if(vendas.length||gastos.length){totDiv.style.display='block';document.getElementById('cal-tot-r').textContent=fmt(totR);document.getElementById('cal-tot-g').textContent=fmt(totG);const sEl=document.getElementById('cal-tot-s');sEl.textContent=fmt(saldo);sEl.className=saldo>=0?'positive':'negative';}else totDiv.style.display='none';
-  renderCalendario();
+  if(vendas.length||gastos.length){totDiv.style.display='block';document.getElementById('cal-tot-r').textContent=fmt(totR);document.getElementById('cal-tot-g').textContent=fmt(totG);const sEl=document.getElementById('cal-tot-s');sEl.textContent=fmt(saldo);sEl.className=saldo>=0?'positive':'negative';}
+  else totDiv.style.display='none';
 }
+
 function limparMes(){
   const mf=_calY+'-'+(_calM+1).toString().padStart(2,'0');
   if(!confirm(`Limpar todos os dados de ${MESES[_calM]} ${_calY}? (vendas e gastos)`)) return;
-  // Restaura unidades vendidas no mes
   const vendasMes=db.vendas.filter(v=>v.data.startsWith(mf));
   vendasMes.forEach(v=>{(v.unidadeIds||[]).forEach(uid=>{const u=db.unidades.find(x=>x.id===uid);if(u){u.status='disponivel';u.saidaEm=null;}});});
   db.vendas=db.vendas.filter(v=>!v.data.startsWith(mf));
   db.gastos=db.gastos.filter(g=>!g.data.startsWith(mf));
-  save();renderCalendario();toast('Dados do mes removidos e unidades restauradas.','warn');
+  _calDia=null;save();renderCalendario();toast('Dados do mes removidos e unidades restauradas.','warn');
+}
+
+// ── EXPORTAR RELATORIO ────────────────────────────────
+function gerarRelatorio(){
+  const de=document.getElementById('exp-de').value;
+  const ate=document.getElementById('exp-ate').value;
+  const incEstoque=document.getElementById('exp-estoque').checked;
+  const incVendas=document.getElementById('exp-vendas').checked;
+  const incGastos=document.getElementById('exp-gastos').checked;
+  const incFin=document.getElementById('exp-financeiro').checked;
+  const incCli=document.getElementById('exp-clientes').checked;
+  const incForn=document.getElementById('exp-fornecedores').checked;
+  const incMovs=document.getElementById('exp-movs').checked;
+  const agora=new Date();
+  const filtrarData=(lista,campo)=>{
+    if(!de&&!ate) return lista;
+    return lista.filter(item=>{
+      const d=item[campo]?.slice(0,10)||'';
+      if(de&&d<de) return false;
+      if(ate&&d>ate) return false;
+      return true;
+    });
+  };
+  const vendas=filtrarData(db.vendas,'data');
+  const gastos=filtrarData(db.gastos,'data');
+  const receita=vendas.reduce((a,v)=>a+v.total,0);
+  const custo=vendas.reduce((a,v)=>{const p=db.produtos.find(x=>x.id===v.prodId);return a+(p?p.compra*(v.unidadeIds?.length||1):0);},0);
+  const gastTot=gastos.reduce((a,g)=>a+g.valor,0);
+  const lucro=receita-custo-gastTot;
+  const totalDisp=db.unidades.filter(u=>u.status==='disponivel').length;
+  const totalVend=db.unidades.filter(u=>u.status==='vendida').length;
+
+  const s=(c,bg)=>`style="padding:8px 12px;border:1px solid #333;color:${c||'#e0e0e0'};background:${bg||'transparent'}"`;
+  const th=txt=>`<th style="padding:8px 12px;background:#1c1c1c;color:#c0c0c0;border:1px solid #333;font-size:11px;letter-spacing:.1em;text-transform:uppercase">${txt}</th>`;
+  const td=(txt,c)=>`<td ${s(c)}>${txt||'—'}</td>`;
+  const sec=(title,cor,html)=>`<div style="margin-bottom:36px"><div style="border-left:3px solid ${cor||'#7a7a7a'};padding-left:12px;margin-bottom:14px"><h2 style="font-size:15px;font-weight:600;color:#e0e0e0;margin:0">${title}</h2></div>${html}</div>`;
+  const tbl=(head,rows)=>`<table style="width:100%;border-collapse:collapse;font-size:13px">${head}${rows}</table>`;
+
+  let body='';
+
+  if(incFin){
+    body+=sec('Resumo Financeiro','#27ae60',`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:8px">
+        ${[['Receita Total',fmt(receita),'#4ec97f'],['Custo de Produtos',fmt(custo),'#e06050'],['Outros Gastos',fmt(gastTot),'#e06050'],['Lucro Liquido',fmt(lucro),lucro>=0?'#4ec97f':'#e06050']].map(([l,v,c])=>`<div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:6px;padding:14px"><div style="font-size:10px;color:#808080;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${l}</div><div style="font-size:22px;font-weight:300;color:${c}">${v}</div></div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:#606060;margin-top:8px">Periodo: ${de||'todo periodo'} ate ${ate||'hoje'}. Gerado em ${agora.toLocaleString('pt-BR')}</div>
+    `);
+  }
+
+  if(incEstoque){
+    const rows=db.produtos.map(p=>{
+      const forn=db.fornecedores.find(f=>f.id===p.fornecedorId);
+      const disp=totalDispProd(p.id);
+      const vend=db.unidades.filter(u=>u.prodId===p.id&&u.status==='vendida').length;
+      const cor=disp===0?'#e06050':disp<=p.minimo?'#f0a050':'#4ec97f';
+      return`<tr>${td(p.codigoBase,'#c0c0c0')}${td(p.nome)}${td(forn?.nome||'—','#808080')}${td(p.categoria,'#808080')}${td(disp,cor)}${td(vend,'#808080')}${td(fmt(p.compra),'#808080')}${td(fmt(p.venda),'#c0c0c0')}${td(fmt(p.venda*disp),'#4ec97f')}</tr>`;
+    }).join('');
+    const head=`<thead><tr>${th('Prefixo')}${th('Produto')}${th('Fornecedor')}${th('Categoria')}${th('Disponivel')}${th('Vendidas')}${th('Custo/un')}${th('Venda/un')}${th('Valor em Estoque')}</tr></thead>`;
+    body+=sec('Estoque Atual','#c0c0c0',tbl(head,`<tbody>${rows||'<tr><td colspan="9" style="padding:12px;text-align:center;color:#606060">Sem produtos</td></tr>'}</tbody>`));
+  }
+
+  if(incVendas){
+    const rows=vendas.map(v=>{
+      const p=db.produtos.find(x=>x.id===v.prodId);
+      const c=db.clientes.find(x=>x.id===v.clienteId);
+      const cods=(v.unidadeIds||[]).map(id=>db.unidades.find(u=>u.id===id)?.codigo||'?').join(', ');
+      return`<tr>${td(new Date(v.data).toLocaleString('pt-BR'),'#808080')}${td(cods,'#c0c0c0')}${td(p?.nome)}${td(c?.nome||'—','#808080')}${td(v.desconto>0?v.desconto+'%':'—','#808080')}${td(fmt(v.total),'#c0c0c0')}${td(fmt(v.lucro),v.lucro>=0?'#4ec97f':'#e06050')}</tr>`;
+    }).join('');
+    const head=`<thead><tr>${th('Data/Hora')}${th('Unidade(s)')}${th('Produto')}${th('Cliente')}${th('Desconto')}${th('Total')}${th('Lucro')}</tr></thead>`;
+    body+=sec('Historico de Vendas','#e06050',tbl(head,`<tbody>${rows||'<tr><td colspan="7" style="padding:12px;text-align:center;color:#606060">Sem vendas no periodo</td></tr>'}</tbody>`));
+  }
+
+  if(incGastos){
+    const rows=gastos.map(g=>`<tr>${td(new Date(g.data).toLocaleString('pt-BR'),'#808080')}${td(g.desc)}${td(g.categoria,'#808080')}${td(fmt(g.valor),'#e06050')}</tr>`).join('');
+    const head=`<thead><tr>${th('Data/Hora')}${th('Descricao')}${th('Categoria')}${th('Valor')}</tr></thead>`;
+    body+=sec('Gastos','#e67e22',tbl(head,`<tbody>${rows||'<tr><td colspan="4" style="padding:12px;text-align:center;color:#606060">Sem gastos no periodo</td></tr>'}</tbody>`));
+  }
+
+  if(incForn){
+    const rows=db.fornecedores.map(f=>{
+      const prods=db.produtos.filter(p=>p.fornecedorId===f.id);
+      const units=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)&&u.status==='disponivel').length;
+      return`<tr>${td(f.codigo,'#c0c0c0')}${td(f.nome)}${td(f.contato||'—','#808080')}${td(f.telefone||'—','#808080')}${td(prods.length,'#808080')}${td(units,'#4ec97f')}</tr>`;
+    }).join('');
+    const head=`<thead><tr>${th('Codigo')}${th('Nome')}${th('Contato')}${th('Telefone')}${th('Tipos')}${th('Unid. Disp.')}</tr></thead>`;
+    body+=sec('Fornecedores','#5dade2',tbl(head,`<tbody>${rows||'<tr><td colspan="6" style="padding:12px;text-align:center;color:#606060">Sem fornecedores</td></tr>'}</tbody>`));
+  }
+
+  if(incCli){
+    const rows=db.clientes.map(c=>{
+      const cv=db.vendas.filter(v=>v.clienteId===c.id);
+      const tot=cv.reduce((a,v)=>a+v.total,0);
+      const ult=cv.length?new Date(cv[cv.length-1].data).toLocaleDateString('pt-BR'):'—';
+      return`<tr>${td(c.nome)}${td(c.telefone||'—','#808080')}${td(cv.length,'#808080')}${td(fmt(tot),'#4ec97f')}${td(ult,'#808080')}</tr>`;
+    }).join('');
+    const head=`<thead><tr>${th('Nome')}${th('Telefone')}${th('Compras')}${th('Total Gasto')}${th('Ultima Compra')}</tr></thead>`;
+    body+=sec('Clientes','#c39bd3',tbl(head,`<tbody>${rows||'<tr><td colspan="5" style="padding:12px;text-align:center;color:#606060">Sem clientes</td></tr>'}</tbody>`));
+  }
+
+  if(incMovs){
+    const movsFiltrados=filtrarData(db.movimentacoes,'data');
+    const rows=[...movsFiltrados].reverse().slice(0,500).map(m=>{
+      const u=db.unidades.find(x=>x.id===m.unidadeId);
+      const p=u?db.produtos.find(x=>x.id===u.prodId):null;
+      const cor=m.tipo==='entrada'?'#4ec97f':m.tipo==='saida'?'#e06050':'#f0a050';
+      return`<tr>${td(new Date(m.data).toLocaleString('pt-BR'),'#808080')}${td(u?.codigo||'—','#c0c0c0')}${td(p?.nome||'—')}${td(m.tipo,cor)}${td(m.obs||'—','#808080')}</tr>`;
+    }).join('');
+    const head=`<thead><tr>${th('Data/Hora')}${th('Unidade')}${th('Produto')}${th('Tipo')}${th('Obs')}</tr></thead>`;
+    body+=sec('Movimentacoes','#808080',tbl(head,`<tbody>${rows||'<tr><td colspan="5" style="padding:12px;text-align:center;color:#606060">Sem movimentacoes</td></tr>'}</tbody>`));
+  }
+
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatorio BL Pratas</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Inter,sans-serif;background:#0a0a0a;color:#e0e0e0;padding:40px 48px;max-width:1100px;margin:0 auto}@media print{body{padding:20px;max-width:100%}}</style>
+  </head><body>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid #2a2a2a">
+    <div><div style="font-size:28px;font-weight:700;letter-spacing:.08em;background:linear-gradient(135deg,#fff,#aaa,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BL PRATAS</div>
+    <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7a7a7a;margin-top:2px">Controle de Estoque</div></div>
+    <div style="text-align:right;font-size:12px;color:#606060"><div>Relatorio Gerencial</div><div>${agora.toLocaleString('pt-BR')}</div><div>${de?'De '+de+' ate '+(ate||'hoje'):'Periodo completo'}</div></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:36px;flex-wrap:wrap">
+    ${[['Total de Produtos',db.produtos.length,'#c0c0c0'],['Unidades Disponiveis',totalDisp,'#4ec97f'],['Unidades Vendidas',totalVend,'#e06050'],['Fornecedores',db.fornecedores.length,'#5dade2'],['Clientes',db.clientes.length,'#c39bd3']].map(([l,v,c])=>`<div style="flex:1;min-width:150px;background:#141414;border:1px solid #2a2a2a;border-radius:6px;padding:14px"><div style="font-size:10px;color:#606060;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${l}</div><div style="font-size:22px;font-weight:300;color:${c}">${v}</div></div>`).join('')}
+  </div>
+  ${body}
+  <div style="margin-top:40px;padding-top:16px;border-top:1px solid #2a2a2a;font-size:11px;color:#444;text-align:center">BL Pratas — Sistema de Controle de Estoque &mdash; Gerado automaticamente em ${agora.toLocaleString('pt-BR')}</div>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='BLPratas_Relatorio_'+agora.toISOString().slice(0,10)+'.html';
+  a.click();URL.revokeObjectURL(url);
+  toast('Relatorio gerado e baixado.');
 }
 
 // ── CONFIGURACOES ────────────────────────────────────
@@ -1475,6 +1710,12 @@ function aplicarMascaraTel(id){const el=document.getElementById(id);if(!el)retur
 // ── INIT ─────────────────────────────────────────────
 ['forn-tel','cli-tel'].forEach(aplicarMascaraTel);
 if(document.getElementById('cfg-minimo')) document.getElementById('cfg-minimo').value=db.config?.minimo||3;
+// Datas padrao para exportacao
+const _hj=new Date();
+document.getElementById('exp-de').value=_hj.getFullYear()+'-'+(_hj.getMonth()+1).toString().padStart(2,'0')+'-01';
+document.getElementById('exp-ate').value=_hj.toISOString().slice(0,10);
+// Exportar na tabela de paginas
+pageTitles.exportar='Exportar Relatorio';
 renderDashboard();
 </script>
 </body>

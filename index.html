@@ -196,6 +196,25 @@ input[readonly]{opacity:.55;cursor:default}
 .cal-entry-label{flex:1;margin:0 10px}
 .cal-entry-val{font-weight:500}
 
+/* ── RANKING CARDS */
+.rank-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;flex:1;min-width:180px}
+.rank-card:hover{border-color:rgba(192,192,192,.22);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.rank-card .rank-pos{position:absolute;top:10px;right:14px;font-size:28px;font-weight:700;color:rgba(255,255,255,.06);line-height:1}
+.rank-card .rank-name{font-size:14px;font-weight:600;color:var(--silver-lt);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-card .rank-sub{font-size:11px;color:var(--text-muted);margin-bottom:10px}
+.rank-card .rank-val{font-size:20px;font-weight:300;color:var(--success)}
+.rank-card.gold{border-color:rgba(212,175,55,.3)}
+.rank-card.gold .rank-pos{color:rgba(212,175,55,.15)}
+.rank-card.silver-r{border-color:rgba(192,192,192,.25)}
+.rank-card.bronze{border-color:rgba(176,141,87,.25)}
+.rank-card.bronze .rank-pos{color:rgba(176,141,87,.15)}
+/* ── PERFIL PANEL */
+.perfil-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.perfil-field{font-size:13px}.perfil-field-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px}
+.perfil-field-val{color:var(--text)}
+.perfil-hist{margin-top:8px}
+.mt-16{margin-top:16px}
+
 /* ── MISC */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px}
@@ -411,10 +430,23 @@ input[readonly]{opacity:.55;cursor:default}
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <button class="btn btn-primary" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
       </div>
+      <!-- Ranking fornecedores -->
+      <div id="forn-ranking" style="display:none;margin-bottom:18px">
+        <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Top Fornecedores por Volume</div>
+        <div id="forn-rank-cards" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+      </div>
       <div class="card">
-        <table><thead><tr><th>Codigo</th><th>Nome</th><th>Contato</th><th>Telefone</th><th>Tipos de Produto</th><th>Unidades</th><th>Acoes</th></tr></thead>
+        <table><thead><tr><th>Codigo</th><th>Nome</th><th>Contato</th><th>Telefone</th><th>Tipos de Produto</th><th>Unid. Disp.</th><th>Total Fornecido</th><th>Acoes</th></tr></thead>
         <tbody id="tbody-fornecedores"></tbody></table>
         <div id="fornecedores-empty" class="empty-state" style="display:none"><p>Nenhum fornecedor cadastrado.</p></div>
+      </div>
+      <!-- Painel perfil fornecedor -->
+      <div id="forn-perfil-panel" style="display:none" class="card">
+        <div class="card-header">
+          <span class="card-title" id="forn-perfil-titulo">Perfil do Fornecedor</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('forn-perfil-panel').style.display='none'">Fechar</button>
+        </div>
+        <div id="forn-perfil-body" style="padding:18px"></div>
       </div>
     </div>
 
@@ -423,11 +455,27 @@ input[readonly]{opacity:.55;cursor:default}
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <button class="btn btn-primary" onclick="abrirModalCliente()">+ Novo Cliente</button>
       </div>
+      <!-- Top 3 ranking -->
+      <div id="cli-ranking" style="display:none;margin-bottom:18px">
+        <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Top 3 Clientes</div>
+        <div id="cli-rank-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+      </div>
+      <!-- Tabela de perfis -->
       <div class="card">
-        <table><thead><tr><th>Nome</th><th>Telefone</th><th>Total Compras</th><th>Ultima Compra</th><th>Acoes</th></tr></thead>
+        <div class="card-header"><span class="card-title">Perfis de Clientes</span></div>
+        <table><thead><tr><th>Nome</th><th>Telefone</th><th>Endereco</th><th>Compras</th><th>Total Gasto</th><th>Ultima Compra</th><th>Observacao</th><th>Acoes</th></tr></thead>
         <tbody id="tbody-clientes"></tbody></table>
         <div id="clientes-empty" class="empty-state" style="display:none"><p>Nenhum cliente cadastrado.</p></div>
       </div>
+      <!-- Painel de perfil expandido -->
+      <div id="cli-perfil-panel" style="display:none" class="card mt-16">
+        <div class="card-header">
+          <span class="card-title" id="cli-perfil-titulo">Perfil</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cli-perfil-panel').style.display='none'">Fechar</button>
+        </div>
+        <div id="cli-perfil-body" style="padding:18px"></div>
+      </div>
+    </div>
     </div>
 
     <!-- RELATORIOS -->
@@ -757,13 +805,20 @@ input[readonly]{opacity:.55;cursor:default}
 
 <!-- CLIENTE -->
 <div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Cliente</span><button class="modal-close" onclick="fecharModal('modal-cliente')">&times;</button></div>
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title" id="cli-modal-title">Novo Cliente</span><button class="modal-close" onclick="fecharModal('modal-cliente')">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="cli-edit-id">
-      <div class="form-group"><label>Nome</label><input type="text" id="cli-nome" placeholder="Nome completo"></div>
-      <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="cli-tel" placeholder="(00) 00000-0000" inputmode="numeric" maxlength="15"></div>
-      <div class="form-group"><label>Observacao</label><input type="text" id="cli-obs" placeholder="Informacoes adicionais"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Nome completo</label><input type="text" id="cli-nome" placeholder="Nome do cliente"></div>
+        <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="cli-tel" placeholder="(00) 00000-0000" inputmode="numeric" maxlength="15"></div>
+      </div>
+      <div class="form-group"><label>Endereco</label><input type="text" id="cli-endereco" placeholder="Rua, numero, bairro, cidade..."></div>
+      <div class="form-row">
+        <div class="form-group"><label>CEP</label><input type="text" id="cli-cep" placeholder="00000-000" maxlength="9"></div>
+        <div class="form-group"><label>Cidade / Estado</label><input type="text" id="cli-cidade" placeholder="Ex: Sao Paulo / SP"></div>
+      </div>
+      <div class="form-group"><label>Observacao</label><textarea id="cli-obs" placeholder="Preferencias, notas importantes..."></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-cliente')">Cancelar</button>
@@ -887,22 +942,86 @@ function salvarFornecedor(){
   save();fecharModal('modal-fornecedor');renderFornecedores();
 }
 function renderFornecedores(){
+  const dados=db.fornecedores.map(f=>{
+    const prods=db.produtos.filter(p=>p.fornecedorId===f.id);
+    const unitsDisp=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)&&u.status==='disponivel').length;
+    const unitsTotal=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)).length;
+    return {f,prods,unitsDisp,unitsTotal};
+  }).sort((a,b)=>b.unitsTotal-a.unitsTotal);
+
+  const rankDiv=document.getElementById('forn-ranking');
+  const rankCards=document.getElementById('forn-rank-cards');
+  if(dados.length>0){
+    rankDiv.style.display='block';
+    const classes=['gold','silver-r','bronze'];
+    rankCards.innerHTML=dados.slice(0,3).map(({f,prods,unitsDisp,unitsTotal},i)=>`
+      <div class="rank-card ${classes[i]||''}" style="cursor:pointer" onclick="verPerfilFornecedor('${f.id}')">
+        <div class="rank-pos">${i+1}°</div>
+        <div class="rank-name">${f.nome}</div>
+        <div class="rank-sub"><span class="code-tag" style="font-size:10px">${f.codigo}</span> &middot; ${prods.length} tipo(s)</div>
+        <div class="rank-val" style="color:var(--silver-lt)">${unitsTotal} un. fornecidas</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${unitsDisp} disponíveis agora</div>
+      </div>`).join('');
+  } else rankDiv.style.display='none';
+
   const tbody=document.getElementById('tbody-fornecedores');
   const empty=document.getElementById('fornecedores-empty');
   tbody.innerHTML='';
   if(!db.fornecedores.length){empty.style.display='block';return;}empty.style.display='none';
-  db.fornecedores.forEach(f=>{
-    const prods=db.produtos.filter(p=>p.fornecedorId===f.id);
-    const units=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)&&u.status==='disponivel');
+  dados.forEach(({f,prods,unitsDisp,unitsTotal})=>{
     tbody.innerHTML+=`<tr>
       <td><span class="code-tag">${f.codigo}</span></td>
-      <td>${f.nome}</td><td>${f.contato||'—'}</td><td>${f.telefone||'—'}</td>
+      <td><strong style="color:var(--silver-lt)">${f.nome}</strong></td>
+      <td>${f.contato||'—'}</td><td>${f.telefone||'—'}</td>
       <td class="text-muted">${prods.length} tipo(s)</td>
-      <td><span class="badge badge-ok">${units.length} disp.</span></td>
-      <td><button class="btn btn-ghost btn-xs" onclick="abrirModalFornecedor('${f.id}')">Editar</button> <button class="btn btn-danger btn-xs" onclick="excluirFornecedor('${f.id}')">Excluir</button></td>
+      <td><span class="badge badge-ok">${unitsDisp} disp.</span></td>
+      <td class="text-muted">${unitsTotal} un. totais</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-blue btn-xs" style="background:rgba(52,152,219,.15);color:#5dade2;border:1px solid rgba(52,152,219,.25)" onclick="verPerfilFornecedor('${f.id}')">Perfil</button>
+        <button class="btn btn-ghost btn-xs" onclick="abrirModalFornecedor('${f.id}')">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="excluirFornecedor('${f.id}')">Excluir</button>
+      </td>
     </tr>`;
   });
 }
+
+function verPerfilFornecedor(id){
+  const f=db.fornecedores.find(x=>x.id===id);
+  if(!f) return;
+  const prods=db.produtos.filter(p=>p.fornecedorId===id);
+  const allUnits=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId));
+  const disp=allUnits.filter(u=>u.status==='disponivel').length;
+  const vend=allUnits.filter(u=>u.status==='vendida').length;
+  const receita=db.vendas.filter(v=>prods.some(p=>p.id===v.prodId)).reduce((a,v)=>a+v.total,0);
+  document.getElementById('forn-perfil-titulo').textContent='Perfil — '+f.nome+' ('+f.codigo+')';
+  const prodRows=prods.map(p=>{
+    const d=db.unidades.filter(u=>u.prodId===p.id&&u.status==='disponivel').length;
+    const v=db.unidades.filter(u=>u.prodId===p.id&&u.status==='vendida').length;
+    return`<tr><td style="font-size:12px;color:var(--silver);padding:7px 10px">${p.codigoBase}</td><td style="font-size:12px;padding:7px 10px">${p.nome}</td><td style="padding:7px 10px"><span class="badge badge-silver" style="font-size:10px">${p.categoria}</span></td><td style="padding:7px 10px"><span class="badge badge-ok" style="font-size:10px">${d} disp.</span></td><td style="font-size:12px;color:var(--text-muted);padding:7px 10px">${v} vendidas</td><td style="font-size:12px;padding:7px 10px">${fmt(p.compra)}</td><td style="font-size:12px;color:var(--silver-lt);padding:7px 10px">${fmt(p.venda)}</td></tr>`;
+  }).join('');
+  document.getElementById('forn-perfil-body').innerHTML=`
+    <div class="perfil-grid">
+      <div class="perfil-field"><div class="perfil-field-label">Nome / Empresa</div><div class="perfil-field-val">${f.nome}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Codigo</div><div class="perfil-field-val"><span class="code-tag">${f.codigo}</span></div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Contato</div><div class="perfil-field-val">${f.contato||'—'}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Telefone</div><div class="perfil-field-val">${f.telefone||'—'}</div></div>
+      <div class="perfil-field" style="grid-column:1/-1"><div class="perfil-field-label">Observacao</div><div class="perfil-field-val">${f.obs||'—'}</div></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      ${[['Tipos de Produto',prods.length,'var(--silver-lt)'],['Disponiveis',disp,'var(--success)'],['Ja Vendidas',vend,'var(--text-muted)'],['Receita Gerada',fmt(receita),'var(--success)']].map(([l,v,c])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;flex:1;min-width:110px"><div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">${l}</div><div style="font-size:20px;font-weight:300;color:${c}">${v}</div></div>`).join('')}
+    </div>
+    ${prods.length?`
+    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Produtos deste Fornecedor</div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>${['Prefixo','Produto','Categoria','Estoque','Vendidas','Compra','Venda'].map(h=>`<th style="text-align:left;padding:7px 10px;font-size:10px;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
+      <tbody>${prodRows}</tbody>
+    </table>`:'<p class="text-muted" style="font-size:13px">Nenhum produto vinculado a este fornecedor.</p>'}
+  `;
+  const panel=document.getElementById('forn-perfil-panel');
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function excluirFornecedor(id){
   if(!confirm('Excluir fornecedor?')) return;
   db.fornecedores=db.fornecedores.filter(f=>f.id!==id);
@@ -1368,37 +1487,133 @@ function renderGastos(){
 }
 
 // ── CLIENTES ─────────────────────────────────────────
-function abrirModalCliente(editId=null){
-  const c=editId?db.clientes.find(x=>x.id===editId):null;
-  document.getElementById('cli-edit-id').value=editId||'';
-  document.getElementById('cli-nome').value=c?.nome||'';
-  document.getElementById('cli-tel').value=c?.telefone||'';
-  document.getElementById('cli-obs').value=c?.obs||'';
-  abrirModal('modal-cliente');
-}
 function salvarCliente(){
   const nome=document.getElementById('cli-nome').value.trim();
   if(!nome){toast('Informe o nome.','error');return;}
   const editId=document.getElementById('cli-edit-id').value;
   const id=editId||uid();
-  const obj={id,nome,telefone:document.getElementById('cli-tel').value,obs:document.getElementById('cli-obs').value};
+  const obj={
+    id, nome,
+    telefone:document.getElementById('cli-tel').value,
+    endereco:document.getElementById('cli-endereco').value.trim(),
+    cep:document.getElementById('cli-cep').value.trim(),
+    cidade:document.getElementById('cli-cidade').value.trim(),
+    obs:document.getElementById('cli-obs').value.trim(),
+    criadoEm: editId ? (db.clientes.find(c=>c.id===editId)?.criadoEm||new Date().toISOString()) : new Date().toISOString()
+  };
   const idx=db.clientes.findIndex(c=>c.id===id);
   if(idx>=0){db.clientes[idx]=obj;toast('Cliente atualizado.');}else{db.clientes.push(obj);toast('Cliente cadastrado.');}
   save();fecharModal('modal-cliente');renderClientes();
 }
+
 function renderClientes(){
+  // Calcular dados de compra por cliente
+  const dados=db.clientes.map(c=>{
+    const vendas=db.vendas.filter(v=>v.clienteId===c.id);
+    const total=vendas.reduce((a,v)=>a+v.total,0);
+    const qtd=vendas.reduce((a,v)=>a+(v.unidadeIds?.length||1),0);
+    const ultima=vendas.length?vendas[vendas.length-1].data:null;
+    return {c, vendas, total, qtd, ultima};
+  }).sort((a,b)=>b.total-a.total);
+
+  // Ranking top 3
+  const rankDiv=document.getElementById('cli-ranking');
+  const rankCards=document.getElementById('cli-rank-cards');
+  if(dados.length>0){
+    rankDiv.style.display='block';
+    const tops=dados.slice(0,3);
+    const classes=['gold','silver-r','bronze'];
+    const medals=['1º','2º','3º'];
+    rankCards.innerHTML=tops.map(({c,total,qtd,ultima},i)=>`
+      <div class="rank-card ${classes[i]||''}">
+        <div class="rank-pos">${medals[i]}</div>
+        <div class="rank-name">${c.nome}</div>
+        <div class="rank-sub">${qtd} peça(s) comprada(s)${ultima?' &middot; ult. '+new Date(ultima).toLocaleDateString('pt-BR'):''}</div>
+        <div class="rank-val">${fmt(total)}</div>
+        ${c.telefone?`<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${c.telefone}</div>`:''}
+      </div>`).join('');
+  } else {
+    rankDiv.style.display='none';
+  }
+
+  // Tabela de perfis
   const tbody=document.getElementById('tbody-clientes');
   const empty=document.getElementById('clientes-empty');
   tbody.innerHTML='';
-  if(!db.clientes.length){empty.style.display='block';return;}empty.style.display='none';
-  db.clientes.forEach(c=>{
-    const vendas=db.vendas.filter(v=>v.clienteId===c.id);
-    const tot=vendas.reduce((a,v)=>a+v.total,0);
-    const ult=vendas.length?fmtDate(vendas[vendas.length-1].data):'—';
-    tbody.innerHTML+=`<tr><td>${c.nome}</td><td>${c.telefone||'—'}</td><td class="positive">${fmt(tot)}</td><td class="text-muted">${ult}</td>
-      <td><button class="btn btn-ghost btn-xs" onclick="abrirModalCliente('${c.id}')">Editar</button> <button class="btn btn-danger btn-xs" onclick="excluirCliente('${c.id}')">Excluir</button></td></tr>`;
+  if(!db.clientes.length){empty.style.display='block';return;}
+  empty.style.display='none';
+  dados.forEach(({c,vendas,total,qtd,ultima})=>{
+    const ultStr=ultima?fmtDate(ultima):'—';
+    const endStr=[c.endereco,c.cidade].filter(Boolean).join(', ')||'—';
+    tbody.innerHTML+=`<tr>
+      <td><strong style="color:var(--silver-lt)">${c.nome}</strong></td>
+      <td>${c.telefone||'—'}</td>
+      <td class="text-muted" style="font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${endStr}</td>
+      <td>${qtd}</td>
+      <td class="positive">${fmt(total)}</td>
+      <td class="text-muted" style="font-size:12px">${ultStr}</td>
+      <td class="text-muted" style="font-size:12px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.obs||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-blue btn-xs" style="background:rgba(52,152,219,.15);color:#5dade2;border:1px solid rgba(52,152,219,.25)" onclick="verPerfilCliente('${c.id}')">Perfil</button>
+        <button class="btn btn-ghost btn-xs" onclick="abrirModalCliente('${c.id}')">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="excluirCliente('${c.id}')">Excluir</button>
+      </td>
+    </tr>`;
   });
 }
+
+function verPerfilCliente(id){
+  const c=db.clientes.find(x=>x.id===id);
+  if(!c) return;
+  const vendas=db.vendas.filter(v=>v.clienteId===id).reverse();
+  const total=vendas.reduce((a,v)=>a+v.total,0);
+  const qtd=vendas.reduce((a,v)=>a+(v.unidadeIds?.length||1),0);
+  document.getElementById('cli-perfil-titulo').textContent='Perfil — '+c.nome;
+  const histRows=vendas.slice(0,10).map(v=>{
+    const p=db.produtos.find(x=>x.id===v.prodId);
+    const cods=(v.unidadeIds||[]).map(id=>db.unidades.find(u=>u.id===id)?.codigo||'?').join(', ');
+    return`<tr><td class="text-muted" style="font-size:12px">${fmtDate(v.data)}</td><td style="font-size:12px">${p?.nome||'—'}</td><td class="font-mono" style="font-size:11px;color:var(--silver)">${cods}</td><td class="positive" style="font-size:12px">${fmt(v.total)}</td></tr>`;
+  }).join('');
+  document.getElementById('cli-perfil-body').innerHTML=`
+    <div class="perfil-grid">
+      <div class="perfil-field"><div class="perfil-field-label">Nome</div><div class="perfil-field-val">${c.nome}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Telefone</div><div class="perfil-field-val">${c.telefone||'—'}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Endereco</div><div class="perfil-field-val">${c.endereco||'—'}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">CEP / Cidade</div><div class="perfil-field-val">${[c.cep,c.cidade].filter(Boolean).join(' — ')||'—'}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Cliente desde</div><div class="perfil-field-val">${new Date(c.criadoEm).toLocaleDateString('pt-BR')}</div></div>
+      <div class="perfil-field"><div class="perfil-field-label">Observacoes</div><div class="perfil-field-val">${c.obs||'—'}</div></div>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Total Gasto</div><div style="font-size:20px;font-weight:300;color:var(--success)">${fmt(total)}</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Pecas Compradas</div><div style="font-size:20px;font-weight:300;color:var(--silver-lt)">${qtd}</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Pedidos</div><div style="font-size:20px;font-weight:300;color:var(--silver-lt)">${vendas.length}</div></div>
+    </div>
+    ${vendas.length?`
+    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Historico de Compras</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr><th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border)">Data</th><th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border)">Produto</th><th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border)">Unidades</th><th style="text-align:left;padding:8px 10px;font-size:10px;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border)">Total</th></tr></thead>
+      <tbody>${histRows}</tbody>
+    </table>`:
+    '<p class="text-muted" style="font-size:13px">Nenhuma compra registrada para este cliente.</p>'}
+  `;
+  const panel=document.getElementById('cli-perfil-panel');
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function abrirModalCliente(editId=null){
+  const c=editId?db.clientes.find(x=>x.id===editId):null;
+  document.getElementById('cli-edit-id').value=editId||'';
+  document.getElementById('cli-modal-title').textContent=editId?'Editar Cliente':'Novo Cliente';
+  document.getElementById('cli-nome').value=c?.nome||'';
+  document.getElementById('cli-tel').value=c?.telefone||'';
+  document.getElementById('cli-endereco').value=c?.endereco||'';
+  document.getElementById('cli-cep').value=c?.cep||'';
+  document.getElementById('cli-cidade').value=c?.cidade||'';
+  document.getElementById('cli-obs').value=c?.obs||'';
+  abrirModal('modal-cliente');
+}
+
 function excluirCliente(id){if(!confirm('Excluir cliente?'))return;db.clientes=db.clientes.filter(c=>c.id!==id);save();renderClientes();toast('Removido.','error');}
 
 // ── RELATORIOS ───────────────────────────────────────
@@ -1623,22 +1838,30 @@ function gerarRelatorio(){
   if(incForn){
     const rows=db.fornecedores.map(f=>{
       const prods=db.produtos.filter(p=>p.fornecedorId===f.id);
-      const units=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)&&u.status==='disponivel').length;
-      return`<tr>${td(f.codigo,'#c0c0c0')}${td(f.nome)}${td(f.contato||'—','#808080')}${td(f.telefone||'—','#808080')}${td(prods.length,'#808080')}${td(units,'#4ec97f')}</tr>`;
+      const unitsDisp=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)&&u.status==='disponivel').length;
+      const unitsTotal=db.unidades.filter(u=>prods.some(p=>p.id===u.prodId)).length;
+      const rec=db.vendas.filter(v=>prods.some(p=>p.id===v.prodId)).reduce((a,v)=>a+v.total,0);
+      return`<tr>${td(f.codigo,'#c0c0c0')}${td(f.nome)}${td(f.contato||'—','#808080')}${td(f.telefone||'—','#808080')}${td(prods.length,'#808080')}${td(unitsDisp,'#4ec97f')}${td(unitsTotal,'#808080')}${td(fmt(rec),'#4ec97f')}</tr>`;
     }).join('');
-    const head=`<thead><tr>${th('Codigo')}${th('Nome')}${th('Contato')}${th('Telefone')}${th('Tipos')}${th('Unid. Disp.')}</tr></thead>`;
-    body+=sec('Fornecedores','#5dade2',tbl(head,`<tbody>${rows||'<tr><td colspan="6" style="padding:12px;text-align:center;color:#606060">Sem fornecedores</td></tr>'}</tbody>`));
+    const head=`<thead><tr>${th('Codigo')}${th('Nome')}${th('Contato')}${th('Telefone')}${th('Tipos')}${th('Unid. Disp.')}${th('Total Fornecido')}${th('Receita Gerada')}</tr></thead>`;
+    body+=sec('Fornecedores','#5dade2',tbl(head,`<tbody>${rows||'<tr><td colspan="8" style="padding:12px;text-align:center;color:#606060">Sem fornecedores</td></tr>'}</tbody>`));
   }
 
   if(incCli){
     const rows=db.clientes.map(c=>{
       const cv=db.vendas.filter(v=>v.clienteId===c.id);
       const tot=cv.reduce((a,v)=>a+v.total,0);
+      const qtd=cv.reduce((a,v)=>a+(v.unidadeIds?.length||1),0);
       const ult=cv.length?new Date(cv[cv.length-1].data).toLocaleDateString('pt-BR'):'—';
-      return`<tr>${td(c.nome)}${td(c.telefone||'—','#808080')}${td(cv.length,'#808080')}${td(fmt(tot),'#4ec97f')}${td(ult,'#808080')}</tr>`;
+      const end=[c.endereco,c.cidade,c.cep].filter(Boolean).join(', ')||'—';
+      return`<tr>${td(c.nome)}${td(c.telefone||'—','#808080')}${td(end,'#808080')}${td(cv.length,'#808080')}${td(qtd,'#808080')}${td(fmt(tot),'#4ec97f')}${td(ult,'#808080')}${td(c.obs||'—','#606060')}</tr>`;
     }).join('');
-    const head=`<thead><tr>${th('Nome')}${th('Telefone')}${th('Compras')}${th('Total Gasto')}${th('Ultima Compra')}</tr></thead>`;
-    body+=sec('Clientes','#c39bd3',tbl(head,`<tbody>${rows||'<tr><td colspan="5" style="padding:12px;text-align:center;color:#606060">Sem clientes</td></tr>'}</tbody>`));
+    const head=`<thead><tr>${th('Nome')}${th('Telefone')}${th('Endereco')}${th('Pedidos')}${th('Pecas')}${th('Total Gasto')}${th('Ultima Compra')}${th('Observacao')}</tr></thead>`;
+    // Top 3
+    const top3=db.clientes.map(c=>{const tot=db.vendas.filter(v=>v.clienteId===c.id).reduce((a,v)=>a+v.total,0);return{c,tot};}).sort((a,b)=>b.tot-a.tot).slice(0,3);
+    const medals=['🥇','🥈','🥉'];
+    const rankHtml=top3.length?`<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">${top3.map(({c,tot},i)=>`<div style="flex:1;min-width:160px;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:6px;padding:14px"><div style="font-size:18px;margin-bottom:4px">${medals[i]||''}</div><div style="font-weight:600;color:#e0e0e0;margin-bottom:4px">${c.nome}</div><div style="font-size:20px;font-weight:300;color:#4ec97f">${fmt(tot)}</div></div>`).join('')}</div>`:'';
+    body+=sec('Clientes','#c39bd3',rankHtml+tbl(head,`<tbody>${rows||'<tr><td colspan="8" style="padding:12px;text-align:center;color:#606060">Sem clientes</td></tr>'}</tbody>`));
   }
 
   if(incMovs){

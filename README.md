@@ -1,4 +1,4 @@
--- Sistema de Controle de Estoque --
+-- Sistema de Controle de Estoque Moderno --
 
 O sistema foi desenvolvido para pequenos comércios que necessitam de:
 

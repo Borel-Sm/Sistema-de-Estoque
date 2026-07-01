@@ -209,7 +209,8 @@ em qualquer navegador moderno.
 
 
 
----Objetivos do Sistema--
+---Objetivos do Sistema-- 
+
 Organizar o estoque da empresa
 Controlar entradas e saídas de mercadorias
 Registrar vendas

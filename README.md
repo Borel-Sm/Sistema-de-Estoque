@@ -207,13 +207,7 @@ index.html
 
 em qualquer navegador moderno.
 
-Opção 2 - Servidor Local
 
-Utilizando VS Code:
-
-Instale a extensão Live Server.
-Clique com o botão direito em index.html.
-Selecione Open with Live Server.
 
 ---Objetivos do Sistema--
 Organizar o estoque da empresa

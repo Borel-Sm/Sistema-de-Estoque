@@ -1,5 +1,20 @@
-BL Pratas - Sistema de Controle de Estoque
-.
+-- Sistema de Controle de Estoque --
+
+O sistema foi desenvolvido para pequenos comércios que necessitam de:
+
+Controle de estoque
+Gestão financeira básica
+Controle de vendas
+Relatórios gerenciais
+
+
+Especialmente indicado para:
+
+Lojas de joias
+Acessórios
+Bijuterias
+
+
 --Principais Funcionalidades--
 
 Dashboard
@@ -210,21 +225,10 @@ Gerenciar clientes e fornecedores
 Gerar relatórios para tomada de decisão
 Público-Alvo
 
-O sistema foi desenvolvido para pequenas e médias empresas que necessitam de:
-
-Controle de estoque
-Gestão financeira básica
-Controle de vendas
-Relatórios gerenciais
-
-Especialmente indicado para:
-
-Lojas de joias
-Acessórios
-Bijuterias
-Pequenos comércios
 
 
-Desenvolvido para o projeto BL Pratas.
+
+
+Desenvolvido por Borel.
 
 Sistema criado para facilitar o gerenciamento operacional, financeiro e de estoque de empresas do segmento de joias e acessórios.
